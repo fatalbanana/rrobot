@@ -76,6 +76,7 @@ func processJobs(ctx context.Context, jobCh chan Job, resultCh chan Result, wg *
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
+	myVM := vm.VM{}
 
 	for {
 		select {
@@ -121,7 +122,7 @@ func processJobs(ctx context.Context, jobCh chan Job, resultCh chan Result, wg *
 				Passed: true,
 			}
 			for _, assertion := range job.Assertions {
-				output, err := expr.Run(assertion, jobEnv)
+				output, err := myVM.Run(assertion, jobEnv)
 				if err != nil || output != true {
 					jobResult.Passed = false
 					var strErr string

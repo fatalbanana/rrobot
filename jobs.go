@@ -47,19 +47,19 @@ func createJobs(ctx context.Context, configCh chan Config, jobCh chan Job) {
 			for i, v := range config.Assertions {
 				job.Assertions[i], err = expr.Compile(v, exprEnv)
 				if err != nil {
-					// FIXME
-					panic(err)
+					fmt.Println("Compile failed (%s): %s", v, err)
+					return
 				}
 			}
 			for _, input := range config.Inputs {
 				matches, err := filepath.Glob(input)
 				if err != nil {
-					// FIXME
-					panic(err)
+					fmt.Println("Glob failed (%s): %s", input, err)
+					return
 				}
 				if len(matches) == 0 {
-					// FIXME
-					fmt.Println("WELP, NO MATCH")
+					fmt.Println("Glob matched nothing: %s", input)
+					return
 				}
 				for _, match := range matches {
 					job.File = match
@@ -70,7 +70,7 @@ func createJobs(ctx context.Context, configCh chan Config, jobCh chan Job) {
 	}
 }
 
-func processJobs(ctx context.Context, jobCh chan Job, resultCh chan Result, wg *sync.WaitGroup) {
+func processJobs(ctx context.Context, jobCh chan Job, resultCh chan Result, wg *sync.WaitGroup, url string) {
 
 	defer wg.Done()
 	client := &http.Client{
@@ -86,41 +86,51 @@ func processJobs(ctx context.Context, jobCh chan Job, resultCh chan Result, wg *
 			if !ok {
 				return
 			}
+			jobResult := Result{
+				File:   job.File,
+				Name:   job.Name,
+				Passed: true,
+			}
 			file, err := os.Open(job.File)
 			if err != nil {
-				// FIXME
-				panic(err)
+				jobResult.Passed = false
+				jobResult.Errors = append(jobResult.Errors,
+					fmt.Sprintf("Open failed (%s): %s", job.File, err))
+				resultCh <- jobResult
+				continue
 			}
-			// FIXME: URL
-			req, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:11333/checkv2", file)
+			req, err := http.NewRequestWithContext(ctx, "POST", url, file)
 			if err != nil {
-				// FIXME
-				panic(err)
+				jobResult.Passed = false
+				jobResult.Errors = append(jobResult.Errors,
+					fmt.Sprintf("Creating request failed: %s", err))
+				resultCh <- jobResult
+				continue
 			}
 			for k, v := range job.Headers {
 				req.Header.Add(k, v)
 			}
 			resp, err := client.Do(req)
 			if err != nil {
-				// FIXME
-				panic(err)
+				jobResult.Passed = false
+				jobResult.Errors = append(jobResult.Errors,
+					fmt.Sprintf("Sending request failed: %s", err))
+				resultCh <- jobResult
+				continue
 			}
 			jobEnv := JobEnv{}
 			rspamdResult := RspamdResult{}
 			dec := json.NewDecoder(resp.Body)
 			err = dec.Decode(&rspamdResult)
-			if err != nil {
-				// FIXME
-				resp.Body.Close()
-				panic(err)
-			}
 			resp.Body.Close()
-			jobEnv.Result = rspamdResult
-			jobResult := Result{
-				File:   job.File,
-				Name:   job.Name,
-				Passed: true,
+			if err != nil {
+				jobResult.Passed = false
+				jobResult.Errors = append(jobResult.Errors,
+					fmt.Sprintf("Decoding response failed: %s", err))
+				resultCh <- jobResult
+				continue
 			}
+			jobEnv.Result = rspamdResult
 			for _, assertion := range job.Assertions {
 				output, err := myVM.Run(assertion, jobEnv)
 				if err != nil || output != true {

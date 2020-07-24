@@ -64,12 +64,14 @@ func main() {
 		return
 	}
 	for _, match := range matches {
-		err, cfg := ReadConfig(match)
+		realCfg, err := ReadConfig(match)
 		if err != nil {
 			fmt.Println("Couldn't parse config(%s): %s", match, err)
 			return
 		}
-		configCh <- cfg
+		for _, cfg := range realCfg.Tests {
+			configCh <- cfg
+		}
 	}
 	close(configCh)
 

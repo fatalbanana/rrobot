@@ -1,8 +1,13 @@
 package main
 
 type Milter struct {
-	RemoveHeaders map[string]int8            `json:"remove_headers"`
 	AddHeaders    map[string]MilterAddHeader `json:"add_headers"`
+	AddRecipients []string                   `json:"add_recipients"`
+	ChangeFrom    string                     `json:"change_from"`
+	NoAction      bool                       `json:"no_action"`
+	Reject        string                     `json:"reject"`
+	RemoveHeaders map[string]int8            `json:"remove_headers"`
+	SpamHeader    string                     `json:"spam_header"`
 }
 
 type MilterAddHeader struct {
@@ -28,6 +33,7 @@ type RspamdResult struct {
 	RequiredScore float32           `json:"required_score"`
 	Score         float32           `json:"score"`
 	Skipped       bool              `json:"is_skipped"`
+	Subject       string            `json:"subject"`
 	Symbols       map[string]Symbol `json:"symbols"`
 	TimeReal      float32           `json:"time_real"`
 	URLs          []string          `json:"urls"`

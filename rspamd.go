@@ -18,14 +18,6 @@ type Symbol struct {
 	Score       float32  `json:"score"`
 }
 
-type RspamdURL struct {
-	Host       string `json:"host"`
-	Phished    bool   `json:"phished"`
-	Redirected bool   `json:"redirected"`
-	TLD        string `json:"tld"`
-	URL        string `json:"url"`
-}
-
 type RspamdResult struct {
 	Action        string            `json:"action"`
 	DKIMSignature string            `json:"dkim-signature"`
@@ -38,5 +30,5 @@ type RspamdResult struct {
 	Skipped       bool              `json:"is_skipped"`
 	Symbols       map[string]Symbol `json:"symbols"`
 	TimeReal      float32           `json:"time_real"`
-	URLs          []RspamdURL       `json:"urls"`
+	URLs          []string          `json:"urls"`
 }

@@ -11,9 +11,11 @@ type MilterAddHeader struct {
 }
 
 type Symbol struct {
-	Name    string   `json:"name"`
-	Options []string `json:"options"`
-	Score   float32  `json:"score"`
+	Description string   `json:"description"`
+	MetricScore float32  `json:"metric_score"`
+	Name        string   `json:"name"`
+	Options     []string `json:"options"`
+	Score       float32  `json:"score"`
 }
 
 type RspamdURL struct {
@@ -35,5 +37,6 @@ type RspamdResult struct {
 	Score         float32           `json:"score"`
 	Skipped       bool              `json:"is_skipped"`
 	Symbols       map[string]Symbol `json:"symbols"`
+	TimeReal      float32           `json:"time_real"`
 	URLs          []RspamdURL       `json:"urls"`
 }
